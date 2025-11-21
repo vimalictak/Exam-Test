@@ -57,14 +57,9 @@ const updateCandidate = async (req, res) => {
 
     // Update email
     if (req.body.email && req.body.email !== candidate.email) {
+      candidate.isEmailUpdated = true;
       candidate.email = req.body.email;
       
-    }
-
-    // Update mobile
-    if (req.body.mobile && req.body.mobile !== candidate.mobile) {
-      candidate.mobile = req.body.mobile;
-      candidate.mobileVerified = false;
     }
 
     const updated = await candidate.save();
@@ -161,6 +156,7 @@ const getTokenIsUsed = async (req, res) => {
 }
 
 module.exports = {
+  updateValidator, 
   getCandidateByToken,
   updateCandidate,
   sendMobileOTP,
