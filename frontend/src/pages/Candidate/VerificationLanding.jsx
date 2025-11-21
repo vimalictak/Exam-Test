@@ -13,30 +13,33 @@ const VerificationLanding = () => {
     const [success, setSuccess] = useState('');
 
     // Verification State
+    // Verification State
     const [emailVerified, setEmailVerified] = useState(false);
-    const [mobileVerified, setMobileVerified] = useState(false);
-    const [otpSent, setOtpSent] = useState(false);
-    const [otp, setOtp] = useState('');
-    const [isDemoMode, setIsDemoMode] = useState(false);
+
 
     const [alreadyConfirmed, setAlreadyConfirmed] = useState(false);
     const [confirmedData, setConfirmedData] = useState(null);
 
     const [candidateData, setCandidateData] = useState({
         _id: '',
-        name: '',
-        mobileNumber: '',
+        name: 'Abin Sebastian',
+        mobileNumber: '+91 9074516446',
         sector: '',
         email: ''
     });
 
     const [formData, setFormData] = useState({
-        email: '',
+        email: 'test@gmail.com',
         attendanceStatus: '',
         declaration: false
     });
 
     const [formErrors, setFormErrors] = useState({});
+
+    // Email Edit State
+    const [isEditingEmail, setIsEditingEmail] = useState(false);
+    const [reEnterEmail, setReEnterEmail] = useState('');
+    const [originalEmail, setOriginalEmail] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -52,51 +55,40 @@ const VerificationLanding = () => {
                         email: data.email
                     });
                     setFormData(prev => ({ ...prev, email: data.email }));
+                    setOriginalEmail(data.email);
 
-                    if (data.emailVerified) setEmailVerified(true);
-                    if (data.mobileVerified) setMobileVerified(true);
+                   
 
-                    setIsDemoMode(false);
+                   
                 } catch (err) {
                     console.error(err);
-                    toast.error('Invalid or expired link. Switching to Demo Mode.');
-                    setIsDemoMode(true);
-                    loadMockData();
+                    
                 } finally {
                     setLoading(false);
                 }
-            } else {
-                setIsDemoMode(true);
-                loadMockData();
-            }
+            } 
         };
 
-        const loadMockData = () => {
-            setTimeout(() => {
-                const mockCandidate = {
-                    _id: 'mock-id',
-                    name: 'Test Candidate',
-                    mobileNumber: '9876543210',
-                    sector: 'Engineering',
-                    email: 'test@example.com'
-                };
-                setCandidateData(mockCandidate);
-                setFormData(prev => ({ ...prev, email: mockCandidate.email }));
-                setLoading(false);
-            }, 1000);
-        };
-
+   
         fetchData();
     }, [token]);
 
     const validateForm = () => {
         const errors = {};
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
         if (!formData.email.trim()) {
             errors.email = 'Email is required';
         } else if (!emailRegex.test(formData.email)) {
             errors.email = 'Please enter a valid email address';
+        }
+
+        if (isEditingEmail) {
+            if (!reEnterEmail) {
+                errors.reEnterEmail = 'Please re-enter your email';
+            } else if (reEnterEmail !== formData.email) {
+                errors.reEnterEmail = 'Emails do not match';
+            }
         }
 
         if (!formData.attendanceStatus) {
@@ -128,67 +120,18 @@ const VerificationLanding = () => {
         }
     };
 
-    const handleVerifyEmail = async () => {
-        if (!formData.email) return toast.error("Please enter an email");
-
-        if (isDemoMode) {
-            toast.success("Demo: Email Verified!");
-            setEmailVerified(true);
-            return;
-        }
-
-        try {
-            await axios.post(`http://localhost:5000/api/candidate/verify-email/${candidateData._id}`, { email: formData.email });
-            setEmailVerified(true);
-            toast.success('Email verified successfully');
-        } catch (error) {
-            toast.error('Email verification failed');
-        }
+    const handleEditEmail = () => {
+        setIsEditingEmail(true);
+        setOriginalEmail(formData.email);
+        setReEnterEmail('');
+        setEmailVerified(false);
     };
 
-    const handleSendOtp = async () => {
-        if (isDemoMode) {
-            setOtpSent(true);
-            toast.success("Demo: OTP Sent (Use 1234)");
-            return;
-        }
-        try {
-            await axios.post('http://localhost:5000/api/candidate/send-otp', {
-                mobile: candidateData.mobileNumber,
-                candidateId: candidateData._id
-            });
-            setOtpSent(true);
-            toast.success('OTP sent to mobile');
-        } catch (error) {
-            toast.error('Failed to send OTP');
-        }
-    };
-
-    const handleVerifyOtp = async () => {
-        if (!otp) return toast.error("Enter OTP");
-
-        if (isDemoMode) {
-            if (otp === '1234') {
-                setMobileVerified(true);
-                setOtpSent(false);
-                toast.success("Demo: Mobile Verified!");
-            } else {
-                toast.error("Demo: Invalid OTP (Try 1234)");
-            }
-            return;
-        }
-
-        try {
-            await axios.post('http://localhost:5000/api/candidate/verify-otp', {
-                candidateId: candidateData._id,
-                otp
-            });
-            setMobileVerified(true);
-            setOtpSent(false);
-            toast.success('Mobile verified');
-        } catch (error) {
-            toast.error('Invalid OTP');
-        }
+    const handleCancelEdit = () => {
+        setIsEditingEmail(false);
+        setFormData(prev => ({ ...prev, email: originalEmail }));
+        setReEnterEmail('');
+        setFormErrors(prev => ({ ...prev, email: '', reEnterEmail: '' }));
     };
 
     const handleSubmit = async (e) => {
@@ -196,13 +139,28 @@ const VerificationLanding = () => {
 
         if (!validateForm()) return;
 
-        if (!emailVerified || !mobileVerified) {
-            toast.error("Please complete email and mobile verification first.");
-            return;
-        }
-
         setSubmitting(true);
         setError('');
+
+        // Email Verification Logic
+        if (isEditingEmail) {
+            // Validation is already handled in validateForm
+
+            if (isDemoMode) {
+                setEmailVerified(true);
+                setIsEditingEmail(false);
+            } else {
+                try {
+                    await axios.post(`http://localhost:5000/api/candidate/verify-email/${candidateData._id}`, { email: formData.email });
+                    setEmailVerified(true);
+                    setIsEditingEmail(false);
+                } catch (error) {
+                    toast.error('Email verification failed');
+                    setSubmitting(false);
+                    return;
+                }
+            }
+        }
 
         if (isDemoMode) {
             setTimeout(() => {
@@ -275,22 +233,7 @@ const VerificationLanding = () => {
                         </div>
                     )}
 
-                    {isDemoMode && (
-                        <div className="mt-6 pt-6 border-t border-gray-200 text-center">
-                            <button
-                                onClick={() => {
-                                    setAlreadyConfirmed(false);
-                                    setSuccess('');
-                                    setFormData({ email: candidateData.email, attendanceStatus: '', declaration: false });
-                                    setEmailVerified(false);
-                                    setMobileVerified(false);
-                                }}
-                                className="text-blue-600 hover:text-blue-800 font-medium"
-                            >
-                                ← Try Again (Demo Mode)
-                            </button>
-                        </div>
-                    )}
+
                 </div>
             </div>
         );
@@ -303,11 +246,7 @@ const VerificationLanding = () => {
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">Examination Confirmation</h1>
                         <p className="text-gray-600">Please verify your details and confirm your attendance</p>
-                        {isDemoMode && (
-                            <div className="mt-2 inline-block bg-blue-50 text-blue-700 px-3 py-1 rounded text-sm">
-                                Demo Mode - No data will be saved
-                            </div>
-                        )}
+
                     </div>
 
                     {error && (
@@ -332,36 +271,98 @@ const VerificationLanding = () => {
                         <div className="bg-blue-50 rounded-lg p-6 space-y-4">
                             <h3 className="font-semibold text-gray-900 mb-4">Your Details</h3>
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Name</label><input type="text" value={candidateData.name} disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed" /></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label><input type="text" value={candidateData.mobileNumber} disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed" /></div>
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Sector</label><input type="text" value={candidateData.sector} disabled className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed" /></div>
                         </div>
 
                         {/* Email Verification Section */}
                         <div className={`p-4 border rounded-lg ${emailVerified ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-medium text-gray-900">1. Email Verification</h3>
-                                {emailVerified && <span className="text-green-600 font-bold text-sm">✓ Verified</span>}
+                                <h3 className="font-medium text-gray-900">2. Email Verification</h3>
+                                <div className="flex items-center gap-2">
+                                    {emailVerified && <span className="text-green-600 font-bold text-sm">✓ Updated</span>}
+                                    {isEditingEmail && (
+                                        <button
+                                            type="button"
+                                            onClick={handleCancelEdit}
+                                            className="text-gray-400 hover:text-gray-600 transition-colors"
+                                            title="Cancel Edit"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
                             <div className="space-y-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Email Address <span className="text-red-500">*</span></label>
-                                    <div className="flex gap-2">
-                                        <input
-                                            type="email"
-                                            name="email"
-                                            value={formData.email}
-                                            onChange={handleInputChange}
-                                            className={`flex-1 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.email ? 'border-red-500' : 'border-gray-300'}`}
-                                            placeholder="your.email@example.com"
-                                        />
-                                        {!emailVerified && (
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">{isEditingEmail ? 'Please Enter the Email Adress' : 'Email Address'} <span className="text-red-500">*</span></label>
+                                    <div className="flex gap-2 items-start">
+                                        <div className="flex-1 space-y-3">
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleInputChange}
+                                                disabled={!isEditingEmail}
+                                                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.email ? 'border-red-500' : 'border-gray-300'} ${!isEditingEmail ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                                                placeholder="your.email@example.com"
+                                            />
+
+                                            {isEditingEmail && (
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">Re-enter Email <span className="text-red-500">*</span></label>
+                                                    <input
+                                                        type="password"
+                                                        value={reEnterEmail}
+                                                        onChange={(e) => {
+                                                            const val = e.target.value;
+                                                            setReEnterEmail(val);
+
+                                                            if (!formData.email) {
+                                                                setFormErrors(prev => ({ ...prev, email: 'Email is required' }));
+                                                                return;
+                                                            }
+
+                                                            if (val !== formData.email) {
+                                                                setFormErrors(prev => ({ ...prev, reEnterEmail: 'Emails do not match' }));
+                                                            } else {
+                                                                setFormErrors(prev => ({ ...prev, reEnterEmail: '' }));
+                                                            }
+                                                        }}
+                                                        onFocus={() => {
+                                                            if (!formData.email) {
+                                                                setFormErrors(prev => ({ ...prev, email: 'Email is required' }));
+                                                            }
+                                                        }}
+                                                        onPaste={(e) => {
+                                                            e.preventDefault();
+                                                            toast.error("Copy-paste is not allowed for email confirmation");
+                                                        }}
+                                                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${formErrors.reEnterEmail ? 'border-red-500' : 'border-gray-300'}`}
+                                                        placeholder="Re-enter your email"
+                                                    />
+                                                    {formErrors.reEnterEmail && <p className="mt-1 text-sm text-red-600">{formErrors.reEnterEmail}</p>}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {!emailVerified && !isEditingEmail && (
                                             <button
                                                 type="button"
-                                                onClick={handleVerifyEmail}
+                                                onClick={handleEditEmail}
                                                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
                                             >
-                                                Verify
+                                                Edit
                                             </button>
+                                        )}
+
+                                        {isEditingEmail && (
+                                            <div className="flex flex-col gap-2">
+                                                {/* Save and Cancel buttons removed as per request */}
+                                            </div>
                                         )}
                                     </div>
                                     {formErrors.email && <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>}
@@ -369,56 +370,7 @@ const VerificationLanding = () => {
                             </div>
                         </div>
 
-                        {/* Mobile Verification Section */}
-                        <div className={`p-4 border rounded-lg ${mobileVerified ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-medium text-gray-900">2. Mobile Verification</h3>
-                                {mobileVerified && <span className="text-green-600 font-bold text-sm">✓ Verified</span>}
-                            </div>
 
-                            <div className="space-y-3">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
-                                    <input
-                                        type="text"
-                                        value={candidateData.mobileNumber}
-                                        disabled
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
-                                    />
-                                </div>
-
-                                {!mobileVerified && (
-                                    <div className="mt-2">
-                                        {!otpSent ? (
-                                            <button
-                                                type="button"
-                                                onClick={handleSendOtp}
-                                                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                                            >
-                                                Send OTP
-                                            </button>
-                                        ) : (
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={otp}
-                                                    onChange={(e) => setOtp(e.target.value)}
-                                                    placeholder="Enter OTP"
-                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={handleVerifyOtp}
-                                                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                                                >
-                                                    Submit
-                                                </button>
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
 
                         {/* Attendance Confirmation */}
                         <div className="p-4 border border-gray-200 rounded-lg">
@@ -433,7 +385,7 @@ const VerificationLanding = () => {
                                         onChange={handleInputChange}
                                         className="mt-1 mr-3 text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span className="text-gray-700 text-sm">Yes, I will attend the examination.</span>
+                                    <span className="text-gray-700 text-sm">Yes, I will attend the test on either 29/11/2025 or 30/11/2025</span>
                                 </label>
                                 <label className="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
                                     <input
@@ -444,7 +396,7 @@ const VerificationLanding = () => {
                                         onChange={handleInputChange}
                                         className="mt-1 mr-3 text-blue-600 focus:ring-blue-500"
                                     />
-                                    <span className="text-gray-700 text-sm">No, I will not attend the examination.</span>
+                                    <span className="text-gray-700 text-sm">No, I will not be able to attend the test on 29/11/2025 or 30/11/2025.</span>
                                 </label>
                             </div>
                             {formErrors.attendanceStatus && <p className="mt-1 text-sm text-red-600">{formErrors.attendanceStatus}</p>}
@@ -469,10 +421,10 @@ const VerificationLanding = () => {
                         <div className="pt-4">
                             <button
                                 type="submit"
-                                disabled={submitting || !emailVerified || !mobileVerified}
-                                className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-colors ${submitting || !emailVerified || !mobileVerified
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+                                disabled={submitting}
+                                className={`w-full py-3 px-4 rounded-lg text-white font-medium transition-colors ${submitting
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
                                     }`}
                             >
                                 {submitting ? (
