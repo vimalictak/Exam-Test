@@ -1,4 +1,4 @@
-const { nanoid } = require('nanoid');
+const nanoid = (...args) => import('nanoid').then(mod => mod.nanoid(...args));
 const Candidate = require("../models/Candidate"); // update path
 
 const generateUniqueToken = async () => {
