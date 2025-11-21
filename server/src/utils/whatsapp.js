@@ -24,7 +24,7 @@ class WhatsAppService {
               {
                 "type": "image",
                 "image": {
-                  "link": `https://betadev.ictkerala.org/api/event-admin/bulk-message/qr/${1002}`
+                  "link": `https://betadev.ictkerala.org/app/api/event-admin/bulk-message/qr/789654`
                 }
               }
             ]
@@ -34,15 +34,15 @@ class WhatsAppService {
             "parameters": [
               {
                 "type": "text",
-                "text": standardizeName("Test user")
+                "text": "Test user"
               },
               {
                 "type": "text",
-                "text": date
+                "text": "Sample"
               },
               {
                 "type": "text",
-                "text": capitalizeName("Time")
+                "text": "Time"
               },
               {
                 "type": "text",
@@ -54,7 +54,7 @@ class WhatsAppService {
               },
               {
                 "type": "text",
-                "text": link
+                "text": "Test hello"
               }
             ]
           }
@@ -88,7 +88,7 @@ class WhatsAppService {
             };
         } catch (error) {
             console.error("Error sending WhatsApp message:", error.response?.data || error.message);
-            throw new Error(`Failed to send WhatsApp message: ${error.response?.data || error.message}`);
+            throw  Error(`Failed to send WhatsApp message: ${error.response?.data || error.message}`);
         }
     }
 }

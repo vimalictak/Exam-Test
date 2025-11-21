@@ -110,7 +110,7 @@ const resendLink = async (req, res) => {
       await candidate.save();
     }
 
-    whatsapp.sendMessage("9744365328" , )
+    whatsapp.sendMessage("9744365328" ,`${process.env.CLIENT_URL}/verify/${candidate.verificationToken}` )
     await sendEmail({
       email: candidate.email,
       subject: 'Exam Verification Reminder',
