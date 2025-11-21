@@ -22,6 +22,9 @@ const getCandidateByToken = async (req, res) => {
 
 
 const updateValidator = [
+  body("emailUpdated")
+    .notEmpty().withMessage("Email  is  Required ")
+    .isBoolean().withMessage("It should be boolen "),
   body("email")
     .notEmpty().withMessage("Email should not be empty")
     .isEmail().withMessage("Invalid email format"),
