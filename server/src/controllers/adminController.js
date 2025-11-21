@@ -59,7 +59,7 @@ const uploadCandidates = async (req, res) => {
           };
 
           if (candidateData.email) {
-            const token = generateToken();
+            const token = await generateToken();
             const newCandidate = await Candidate.create({
               ...candidateData,
               verificationToken: token,
@@ -67,7 +67,7 @@ const uploadCandidates = async (req, res) => {
             createdCandidates.push(newCandidate);
 
             // Send Link
-            
+
           }
         }
         fs.unlinkSync(req.file.path); // Clean up
@@ -76,7 +76,7 @@ const uploadCandidates = async (req, res) => {
   } else {
     // Manual Create
     const { fullName, email, mobile, sector } = req.body;
-    const token = generateToken();
+    const token = await generateToken();
 
     const candidate = await Candidate.create({
       fullName,
@@ -87,12 +87,6 @@ const uploadCandidates = async (req, res) => {
     });
 
     if (candidate) {
-      await sendEmail({
-        email: candidate.email,
-        subject: 'Exam Verification Required',
-        message: `Please verify your details: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`
-      });
-      await sendSMS.sendMessage(candidate.mobile, `Verify here: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`);
 
       res.status(201).json(candidate);
     } else {
@@ -109,7 +103,7 @@ const resendLink = async (req, res) => {
     // Regenerate if expired or just resend?
     // Let's just resend the existing valid one, or generate new if expired.
     if (candidate.isTokenUsed) {
-      candidate.verificationToken = generateToken();
+      candidate.verificationToken = await generateToken();
       candidate.isTokenUsed = false;
       await candidate.save();
     }
