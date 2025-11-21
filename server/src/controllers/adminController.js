@@ -55,23 +55,19 @@ const uploadCandidates = async (req, res) => {
             fullName: row.fullName || row['Full Name'],
             email: row.email || row['Email'],
             mobile: row.mobile || row['Mobile'],
+            sector: row.sector || row['Sector'] || null,
           };
-          
+
           if (candidateData.email) {
-             const token = generateToken();
-             const newCandidate = await Candidate.create({
-               ...candidateData,
-               verificationToken: token,
-             });
-             createdCandidates.push(newCandidate);
-             
-             // Send Link
-             await sendEmail({
-               email: newCandidate.email,
-               subject: 'Exam Verification Required',
-               message: `Please verify your details: ${process.env.CLIENT_URL}/verify/${newCandidate.verificationToken}`
-             });
-             await sendSMS.sendMessage(newCandidate.mobile, `Verify here: ${process.env.CLIENT_URL}/verify/${newCandidate.verificationToken}`);
+            const token = await generateToken();
+            const newCandidate = await Candidate.create({
+              ...candidateData,
+              verificationToken: token,
+            });
+            createdCandidates.push(newCandidate);
+
+            // Send Link
+
           }
         }
         fs.unlinkSync(req.file.path); // Clean up
@@ -79,24 +75,19 @@ const uploadCandidates = async (req, res) => {
       });
   } else {
     // Manual Create
-    const { fullName, email, mobile } = req.body;
-    const token = generateToken();
-    
+    const { fullName, email, mobile, sector } = req.body;
+    const token = await generateToken();
+
     const candidate = await Candidate.create({
       fullName,
       email,
       mobile,
+      sector: sector || null,
       verificationToken: token,
     });
 
     if (candidate) {
-      await sendEmail({
-        email: candidate.email,
-        subject: 'Exam Verification Required',
-        message: `Please verify your details: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`
-      });
-      await sendSMS.sendMessage(candidate.mobile, `Verify here: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`);
-      
+
       res.status(201).json(candidate);
     } else {
       res.status(400).json({ message: 'Invalid candidate data' });
@@ -112,9 +103,9 @@ const resendLink = async (req, res) => {
     // Regenerate if expired or just resend?
     // Let's just resend the existing valid one, or generate new if expired.
     if (candidate.isTokenUsed) {
-       candidate.verificationToken = generateToken();
-       candidate.isTokenUsed = false;
-       await candidate.save();
+      candidate.verificationToken = await generateToken();
+      candidate.isTokenUsed = false;
+      await candidate.save();
     }
 
     await sendEmail({
