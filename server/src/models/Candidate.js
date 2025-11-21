@@ -4,14 +4,17 @@ const candidateSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
   email: { type: String, required: true },
   mobile: { type: String, required: true },
-
   verificationToken: { type: String },
   isTokenUsed: { type: Boolean, default: false },
 
   mobileVerified: { type: Boolean, default: false },
-  isEmailUpdated : { 
-    type :  Boolean ,
-    default : false 
+  isEmailUpdated: {
+    type: Boolean,
+    default: false
+  },
+  sector: {
+    type: String,
+    default: null
   },
   status: {
     type: String,
