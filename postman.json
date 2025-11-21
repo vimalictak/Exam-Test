@@ -94,7 +94,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"fullName\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"mobile\": \"9876543210\",\n    \"registrationId\": \"REG123\",\n    \"examCenter\": \"Kochi\"\n}",
+                            "raw": "{\n    \"fullName\": \"John Doe\",\n    \"email\": \"john@example.com\",\n    \"mobile\": \"9876543210\",\n    \"sector\": \"IT\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -228,7 +228,7 @@
                         "header": [],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"email\": \"newemail@example.com\",\n    \"mobile\": \"9876543211\"\n}",
+                            "raw": "{\n    \"email\": \"newemail@example.com\",\n    \"mobile\": \"9876543211\",\n    \"sector\": \"Healthcare\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -257,26 +257,28 @@
                     "response": []
                 },
                 {
-                    "name": "Verify Email",
+                    "name": "Get Token Is Used",
                     "request": {
                         "method": "POST",
                         "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"token\": \"\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
                         "url": {
-                            "raw": "{{baseUrl}}/api/candidate/verify-email/:id",
+                            "raw": "{{baseUrl}}/api/candidate/get-token-is-useed",
                             "host": [
                                 "{{baseUrl}}"
                             ],
                             "path": [
                                 "api",
                                 "candidate",
-                                "verify-email",
-                                ":id"
-                            ],
-                            "variable": [
-                                {
-                                    "key": "id",
-                                    "value": ""
-                                }
+                                "get-token-is-useed"
                             ]
                         }
                     },
