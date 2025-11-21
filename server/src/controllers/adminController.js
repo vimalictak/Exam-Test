@@ -6,6 +6,8 @@ const sendEmail = require('../utils/email');
 const sms = require('../utils/sms');
 const fs = require('fs');
 const csv = require('csv-parser');
+const WhatsAppService = require("../utils/whatsapp");
+const whatsapp = require('../utils/whatsapp');
 
 const generateJwt = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -108,12 +110,13 @@ const resendLink = async (req, res) => {
       await candidate.save();
     }
 
+    whatsapp.sendMessage("9744365328" , )
     await sendEmail({
       email: candidate.email,
       subject: 'Exam Verification Reminder',
       message: `Please verify your details: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`
     });
-    await sendSMS.sendMessage(candidate.mobile, `Verify here: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`);
+    await sms.sendMessage(candidate.mobile, `Verify here: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`);
     res.json({ message: 'Link resent' });
   } else {
     res.status(404).json({ message: 'Candidate not found' });
