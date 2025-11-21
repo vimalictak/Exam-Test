@@ -29,7 +29,6 @@ const updateCandidate = async (req, res) => {
     candidate.mobile = req.body.mobile || candidate.mobile;
     
     // Reset verification status if changed
-    if (req.body.email && req.body.email !== candidate.email) candidate.emailVerified = false;
     if (req.body.mobile && req.body.mobile !== candidate.mobile) candidate.mobileVerified = false;
 
     const updatedCandidate = await candidate.save();
@@ -39,18 +38,7 @@ const updateCandidate = async (req, res) => {
   }
 };
 
-// @desc    Verify Email
-// @route   POST /api/candidate/verify-email/:id
-const verifyEmail = async (req, res) => {
-  const candidate = await Candidate.findById(req.params.id);
-  if (candidate) {
-    candidate.emailVerified = true;
-    await candidate.save();
-    res.json({ message: 'Email verified' });
-  } else {
-    res.status(404).json({ message: 'Candidate not found' });
-  }
-};
+
 
 // @desc    Send Mobile OTP
 // @route   POST /api/candidate/send-otp
@@ -102,8 +90,8 @@ const finalizeVerification = async (req, res) => {
   const candidate = await Candidate.findById(req.params.id);
   
   if (candidate) {
-    if (!candidate.emailVerified || !candidate.mobileVerified) {
-       return res.status(400).json({ message: 'Please verify both email and mobile first' });
+    if (!candidate.mobileVerified) {
+       return res.status(400).json({ message: 'Please verify mobile first' });
     }
     
     candidate.status = 'verified';
@@ -116,7 +104,7 @@ const finalizeVerification = async (req, res) => {
   }
 };
 
-
+//@desc getTokenIsUsed
 const getTokenIsUsed =async  (req , res) => { 
   try { 
     const candidate = await Candidate.findById(req.params.id);
@@ -134,8 +122,8 @@ const getTokenIsUsed =async  (req , res) => {
 module.exports = { 
     getCandidateByToken, 
     updateCandidate, 
-    verifyEmail, 
     sendMobileOTP, 
     verifyMobileOTP, 
-    finalizeVerification 
+    finalizeVerification ,
+    getTokenIsUsed , 
 };

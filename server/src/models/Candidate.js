@@ -8,9 +8,11 @@ const candidateSchema = new mongoose.Schema({
   verificationToken: { type: String },
   isTokenUsed: { type: Boolean, default: false },
 
-  emailVerified: { type: Boolean, default: false },
   mobileVerified: { type: Boolean, default: false },
-
+  isEmailUpdated : { 
+    type :  Boolean ,
+    default : false 
+  },
   status: {
     type: String,
     enum: ['pending', 'verified'],

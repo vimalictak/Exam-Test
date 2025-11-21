@@ -1,7 +1,16 @@
 const { nanoid } = require('nanoid');
+const Candidate = require("../models/Candidate"); // update path
 
-const generateToken = () => {
-  return nanoid(10); // Generate a secure 10-character token
+const generateUniqueToken = async () => {
+  let token;
+  let exists = true;
+
+  while (exists) {
+    token = nanoid(21); // very low collision chance
+    exists = await Candidate.exists({ verificationToken: token });
+  }
+
+  return token;
 };
 
-module.exports = generateToken;
+module.exports = generateUniqueToken;
