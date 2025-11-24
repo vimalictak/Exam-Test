@@ -64,7 +64,7 @@ class sms {
             "pwd": process.env.PHONE_OTP_PWD,
             "senderid": process.env.PHONE_OTP_SENDERID,
             "to": phoneNumber,
-            "msg": message,
+            "msg": message + "-is your OTP for Verification/Authorisation at K-DISC - ICT",
             "route": process.env.PHONE_OTP_ROUTE,
             "peid": process.env.PHONE_OTP_PEID,
             "tempid": process.env.PHONE_OTP_TEMPID,

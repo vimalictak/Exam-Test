@@ -2,12 +2,12 @@ const Admin = require('../models/Admin');
 const Candidate = require('../models/Candidate');
 const jwt = require('jsonwebtoken');
 const generateToken = require('../utils/token');
-const sendEmail = require('../utils/email');
-const sms = require('../utils/sms');
 const fs = require('fs');
 const csv = require('csv-parser');
-const WhatsAppService = require("../utils/whatsapp");
 const whatsapp = require('../utils/whatsapp');
+const sms = require('../utils/sms');
+
+
 
 const generateJwt = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -110,12 +110,8 @@ const resendLink = async (req, res) => {
       await candidate.save();
     }
 
-    whatsapp.sendMessage("9744365328" ,`${process.env.CLIENT_URL}/verify/${candidate.verificationToken}` )
-    await sendEmail({
-      email: candidate.email,
-      subject: 'Exam Verification Reminder',
-      message: `Please verify your details: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`
-    });
+    whatsapp.sendMessage(candidate.mobile ,`${process.env.CLIENT_URL}/verify/${candidate.verificationToken}` )
+    
     await sms.sendMessage(candidate.mobile, `Verify here: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`);
     res.json({ message: 'Link resent' });
   } else {
@@ -123,4 +119,26 @@ const resendLink = async (req, res) => {
   }
 };
 
-module.exports = { authAdmin, getCandidates, uploadCandidates, resendLink };
+
+
+// @desc    Resend verification link
+// @route   POST /api/admin/resend/sms/:id
+const resendSms = async (req, res) => {
+  const candidate = await Candidate.findById(req.params.id);
+  if (candidate) {
+    // Regenerate if expired or just resend?
+    // Let's just resend the existing valid one, or generate new if expired.
+    if (candidate.isTokenUsed) {
+      candidate.verificationToken = await generateToken();
+      candidate.isTokenUsed = false;
+      await candidate.save();
+    }
+
+    await sms.sendMessage(candidate.mobile, `Verify here: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`);
+    res.json({ message: 'Link resent' });
+  } else {
+    res.status(404).json({ message: 'Candidate not found' });
+  }
+};
+
+module.exports = { authAdmin, getCandidates, uploadCandidates, resendLink , resendSms };
