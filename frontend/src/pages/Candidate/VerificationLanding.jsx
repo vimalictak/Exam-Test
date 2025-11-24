@@ -12,6 +12,7 @@ const VerificationLanding = () => {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState('');
     const [invalidToken, setInvalidToken] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     // Verification State
     // Verification State
@@ -40,7 +41,7 @@ const VerificationLanding = () => {
         const fetchData = async () => {
             if (token) {
                 try {
-                    const res = await axios.get(`http://localhost:5000/api/candidate/verify/${token}`);
+                    const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/candidate/verify/${token}`);
                     const data = res.data;
                     setCandidateData({
                         _id: data._id,
@@ -54,14 +55,14 @@ const VerificationLanding = () => {
                 } catch (err) {
                     console.error(err);
                     setInvalidToken(true);
-                    
+
                 } finally {
                     setLoading(false);
                 }
-            } 
+            }
         };
 
-   
+
         fetchData();
     }, [token]);
 
@@ -97,7 +98,7 @@ const VerificationLanding = () => {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
-        if(name === 'attendanceStatus'){
+        if (name === 'attendanceStatus') {
             setFormData(prev => ({
                 ...prev,
                 [name]: value === 'true' ? true : false
@@ -138,27 +139,32 @@ const VerificationLanding = () => {
         if (!validateForm()) return;
 
         setSubmitting(true);
-        setError('');    
-        try{
-            const res = await axios.put(`http://localhost:5000/api/candidate/update/${candidateData._id}`, {
+        setError('');
+        try {
+            const res = await axios.put(`${import.meta.env.VITE_API_URL}/api/candidate/update/${candidateData._id}`, {
                 email: formData.email,
                 attendanceStatus: formData.attendanceStatus,
                 declaration: formData.declaration,
                 emailUpdated: isEditingEmail,
-                re_email: reEnterEmail? reEnterEmail : null
+                re_email: reEnterEmail ? reEnterEmail : null
             });
 
-            setSuccess('Your attendance has been confirmed successfully.');
+            // setSuccess('Your attendance has been confirmed successfully.');
+            setShowSuccessModal(true);
             setSubmitting(false);
         }
-        catch(err){
+        catch (err) {
             console.error(err);
             // Handle error toast
             alert('An error occurred while submitting your confirmation. Please try later.');
-            setError( 'An error occurred while submitting your confirmation. Please try later.');
+            setError('An error occurred while submitting your confirmation. Please try later.');
 
             setSubmitting(false);
         }
+    };
+
+    const handleModalClose = () => {
+        window.location.href = 'https://ictkerala.org';
     };
 
     if (loading) {
@@ -172,7 +178,7 @@ const VerificationLanding = () => {
         );
     }
     else if (invalidToken) {
-        return(
+        return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
                 <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
                     <h1 className="text-2xl font-bold text-gray-900 mb-4">Invalid or Expired Link</h1>
@@ -189,7 +195,7 @@ const VerificationLanding = () => {
         )
     }
 
-else return (
+    else return (
         <div className="min-h-screen bg-gray-50 py-8 px-4">
             <div className="max-w-2xl mx-auto">
                 <div className="bg-white rounded-lg shadow-lg p-8">
@@ -391,6 +397,27 @@ else return (
                     <div className="mt-6 pt-6 border-t border-gray-200">
                         <p className="text-sm text-gray-600 text-center">For any queries or issues, please contact the examination helpdesk.</p>
                     </div>
+
+                    {/* Success Modal */}
+                    {showSuccessModal && (
+                        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                            <div className="bg-white rounded-lg shadow-xl p-8 max-w-sm w-full text-center">
+                                <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                                    <svg className="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <h3 className="text-lg font-medium text-gray-900 mb-2">Success!</h3>
+                                <p className="text-gray-500 mb-6">Your attendance has been confirmed successfully.</p>
+                                <button
+                                    onClick={handleModalClose}
+                                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                >
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

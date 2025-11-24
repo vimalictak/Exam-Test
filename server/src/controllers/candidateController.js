@@ -29,14 +29,18 @@ const updateValidator = [
     .notEmpty().withMessage("Email should not be empty")
     .isEmail().withMessage("Invalid email format"),
 
-  body("re-email")
-    .notEmpty().withMessage("Re-enter email should not be empty")
-    .isEmail().withMessage("Invalid email format")
+  body("re_email")
+    .optional()
     .custom((value, { req }) => {
-      if (value !== req.body.email) {
-        throw new Error("Email mismatch");
+      if (req.body.emailUpdated === true) {
+        if (value !== req.body.email) {
+          throw new Error("Email mismatch");
+        }
+        return true;
       }
-      return true;
+
+      return true
+
     }),
 ];
 
@@ -62,13 +66,22 @@ const updateCandidate = async (req, res) => {
     if (req.body.email && req.body.email !== candidate.email) {
       candidate.isEmailUpdated = true;
       candidate.email = req.body.email;
-      
     }
+
+    // Update attendance status
+    if (req.body.attendanceStatus !== undefined) {
+      candidate.attendanceStatus = req.body.attendanceStatus;
+    }
+
+    // Finalize verification logic
+    candidate.status = 'verified';
+    candidate.isTokenUsed = true;
+    candidate.verificationToken = undefined; // Invalidate token
 
     const updated = await candidate.save();
 
     return res.json({
-      message: "Candidate updated successfully",
+      message: "Candidate updated and verified successfully",
       data: updated,
     });
 
@@ -123,25 +136,7 @@ const verifyMobileOTP = async (req, res) => {
   }
 };
 
-// @desc    Finalize Verification
-// @route   POST /api/candidate/finalize/:id
-const finalizeVerification = async (req, res) => {
-  const candidate = await Candidate.findById(req.params.id);
 
-  if (candidate) {
-    if (!candidate.mobileVerified) {
-      return res.status(400).json({ message: 'Please verify mobile first' });
-    }
-
-    candidate.status = 'verified';
-    candidate.isTokenUsed = true;
-    candidate.verificationToken = undefined; // Invalidate token
-    await candidate.save();
-    res.json({ message: 'Verification complete' });
-  } else {
-    res.status(404).json({ message: 'Candidate not found' });
-  }
-};
 
 //@desc getTokenIsUsed
 const getTokenIsUsed = async (req, res) => {
@@ -159,11 +154,10 @@ const getTokenIsUsed = async (req, res) => {
 }
 
 module.exports = {
-  updateValidator, 
+  updateValidator,
   getCandidateByToken,
   updateCandidate,
   sendMobileOTP,
   verifyMobileOTP,
-  finalizeVerification,
   getTokenIsUsed,
 };

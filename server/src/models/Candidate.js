@@ -21,6 +21,10 @@ const candidateSchema = new mongoose.Schema({
     enum: ['pending', 'verified'],
     default: 'pending',
   },
+  attendanceStatus: {
+    type: Boolean,
+    default: null
+  }
 }, { timestamps: true });
 
 const Candidate = mongoose.model('Candidate', candidateSchema);

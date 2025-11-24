@@ -16,7 +16,7 @@ const Dashboard = () => {
 
     const fetchCandidates = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/candidates', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/candidates`, {
                 headers: { Authorization: token }
             });
             setCandidates(res.data);
@@ -27,7 +27,7 @@ const Dashboard = () => {
 
     const fetchCampaignHistory = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/campaign/history', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/admin/campaign/history`, {
                 headers: { Authorization: token }
             });
             setCampaigns(res.data.campaigns || []);
@@ -46,7 +46,7 @@ const Dashboard = () => {
 
     const onSendCampaign = async (data) => {
         try {
-            await axios.post('http://localhost:5000/api/admin/campaign/send', data, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/admin/campaign/send`, data, {
                 headers: { Authorization: token }
             });
             toast.success('Campaign sent successfully');
@@ -66,12 +66,11 @@ const Dashboard = () => {
             formData.append('fullName', data.fullName);
             formData.append('email', data.email);
             formData.append('mobile', data.mobile);
-            formData.append('registrationId', data.registrationId);
-            formData.append('examCenter', data.examCenter);
+            formData.append('sector', data.sector);
         }
 
         try {
-            await axios.post('http://localhost:5000/api/admin/upload', formData, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/admin/upload`, formData, {
                 headers: {
                     Authorization: token,
                     'Content-Type': 'multipart/form-data'
@@ -87,7 +86,7 @@ const Dashboard = () => {
 
     const handleResend = async (id) => {
         try {
-            await axios.post(`http://localhost:5000/api/admin/resend/${id}`, {}, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/admin/resend/${id}`, {}, {
                 headers: { Authorization: token }
             });
             toast.success('Verification link resent');
@@ -98,7 +97,7 @@ const Dashboard = () => {
 
     const handleResendSms = async (id) => {
         try {
-            await axios.post(`http://localhost:5000/api/admin/resend/sms/${id}`, {}, {
+            await axios.post(`${import.meta.env.VITE_API_URL}/api/admin/resend/sms/${id}`, {}, {
                 headers: { Authorization: token }
             });
             toast.success('SMS resent successfully');
@@ -140,8 +139,13 @@ const Dashboard = () => {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mobile</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sector</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token Used</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email Updated</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created At</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -150,6 +154,7 @@ const Dashboard = () => {
                                 <tr key={candidate._id}>
                                     <td className="px-6 py-4 whitespace-nowrap">{candidate.fullName}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{candidate.email}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap">{candidate.mobile}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">{candidate.sector || '-'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${candidate.status === 'verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
@@ -157,19 +162,50 @@ const Dashboard = () => {
                                             {candidate.status}
                                         </span>
                                     </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${candidate.isTokenUsed ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                                            {candidate.isTokenUsed ? 'Yes' : 'No'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${candidate.isEmailUpdated ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                                            {candidate.isEmailUpdated ? 'Yes' : 'No'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {candidate.attendanceStatus === true ? (
+                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Present</span>
+                                        ) : candidate.attendanceStatus === false ? (
+                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Absent</span>
+                                        ) : (
+                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Pending</span>
+                                        )}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {new Date(candidate.createdAt).toLocaleString()}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                                        <button
-                                            onClick={() => handleResend(candidate._id)}
-                                            className="text-indigo-600 hover:text-indigo-900"
-                                        >
-                                            Resend Link
-                                        </button>
-                                        <button
-                                            onClick={() => handleResendSms(candidate._id)}
-                                            className="text-blue-600 hover:text-blue-900"
-                                        >
-                                            Resend SMS
-                                        </button>
+                                        {candidate.status !== 'verified' ?(
+                                            <>
+                                                <button
+                                                    onClick={() => handleResend(candidate._id)}
+                                                    className="text-indigo-600 hover:text-indigo-900"
+                                                >
+                                                    Resend Link
+                                                </button>
+                                                <button
+                                                    onClick={() => handleResendSms(candidate._id)}
+                                                    className="text-blue-600 hover:text-blue-900"
+                                                >
+                                                    Resend SMS
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${candidate.status === 'verified' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                            }`}>
+                                            {candidate.status}
+                                        </span>
+                                        )}
                                     </td>
                                 </tr>
                             ))}
@@ -191,8 +227,7 @@ const Dashboard = () => {
                                 <Input label="Full Name" {...register('fullName')} />
                                 <Input label="Email" {...register('email')} />
                                 <Input label="Mobile" {...register('mobile')} />
-                                <Input label="Registration ID" {...register('registrationId')} />
-                                <Input label="Exam Center" {...register('examCenter')} />
+                                <Input label="Sector" {...register('sector')} />
                             </div>
                         </div>
 

@@ -105,9 +105,7 @@ const resendLink = async (req, res) => {
     // Regenerate if expired or just resend?
     // Let's just resend the existing valid one, or generate new if expired.
     if (candidate.isTokenUsed) {
-      candidate.verificationToken = await generateToken();
-      candidate.isTokenUsed = false;
-      await candidate.save();
+      return res.status(400).json({ message: 'Link already used', used: true  , success: false });
     }
 
     whatsapp.sendMessage(candidate.mobile ,`${process.env.CLIENT_URL}/verify/${candidate.verificationToken}` )
@@ -129,9 +127,7 @@ const resendSms = async (req, res) => {
     // Regenerate if expired or just resend?
     // Let's just resend the existing valid one, or generate new if expired.
     if (candidate.isTokenUsed) {
-      candidate.verificationToken = await generateToken();
-      candidate.isTokenUsed = false;
-      await candidate.save();
+      return res.status(400).json({ message: 'Link already used', used: true  , success: false });
     }
 
     await sms.sendMessage(candidate.mobile, `Verify here: ${process.env.CLIENT_URL}/verify/${candidate.verificationToken}`);
