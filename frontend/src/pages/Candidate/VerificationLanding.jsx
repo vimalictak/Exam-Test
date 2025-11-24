@@ -9,28 +9,23 @@ const VerificationLanding = () => {
 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState(null);
     const [success, setSuccess] = useState('');
+    const [invalidToken, setInvalidToken] = useState(false);
 
     // Verification State
     // Verification State
-    const [emailVerified, setEmailVerified] = useState(false);
-
-
-    const [alreadyConfirmed, setAlreadyConfirmed] = useState(false);
-    const [confirmedData, setConfirmedData] = useState(null);
-
     const [candidateData, setCandidateData] = useState({
         _id: '',
-        name: 'Abin Sebastian',
-        mobileNumber: '+91 9074516446',
+        name: '',
+        mobileNumber: '',
         sector: '',
         email: ''
     });
 
     const [formData, setFormData] = useState({
         email: 'test@gmail.com',
-        attendanceStatus: '',
+        attendanceStatus: null,
         declaration: false
     });
 
@@ -49,19 +44,16 @@ const VerificationLanding = () => {
                     const data = res.data;
                     setCandidateData({
                         _id: data._id,
-                        name: data.fullName,
-                        mobileNumber: data.mobile,
-                        sector: data.examCenter,
-                        email: data.email
+                        name: data.fullName || '',
+                        mobileNumber: data.mobile || '',
+                        sector: data.sector || '',
+                        email: data.email || ''
                     });
                     setFormData(prev => ({ ...prev, email: data.email }));
                     setOriginalEmail(data.email);
-
-                   
-
-                   
                 } catch (err) {
                     console.error(err);
+                    setInvalidToken(true);
                     
                 } finally {
                     setLoading(false);
@@ -91,7 +83,7 @@ const VerificationLanding = () => {
             }
         }
 
-        if (!formData.attendanceStatus) {
+        if (formData.attendanceStatus === null || formData.attendanceStatus === undefined) {
             errors.attendanceStatus = 'Please select your attendance confirmation';
         }
 
@@ -105,15 +97,21 @@ const VerificationLanding = () => {
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target;
+        if(name === 'attendanceStatus'){
+            setFormData(prev => ({
+                ...prev,
+                [name]: value === 'true' ? true : false
+            }));
+            if (formErrors[name]) {
+                setFormErrors(prev => ({ ...prev, [name]: '' }));
+            }
+            return;
+        }
         setFormData(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
         }));
 
-        if (name === 'email' && emailVerified) {
-            setEmailVerified(false);
-            toast('Email changed, please verify again.', { icon: '⚠️' });
-        }
 
         if (formErrors[name]) {
             setFormErrors(prev => ({ ...prev, [name]: '' }));
@@ -124,7 +122,6 @@ const VerificationLanding = () => {
         setIsEditingEmail(true);
         setOriginalEmail(formData.email);
         setReEnterEmail('');
-        setEmailVerified(false);
     };
 
     const handleCancelEdit = () => {
@@ -135,62 +132,32 @@ const VerificationLanding = () => {
     };
 
     const handleSubmit = async (e) => {
+        console.log('Submitting form with data:', formData, 'Re-entered Email:', reEnterEmail);
         e.preventDefault();
 
         if (!validateForm()) return;
 
         setSubmitting(true);
-        setError('');
+        setError('');    
+        try{
+            const res = await axios.put(`http://localhost:5000/api/candidate/update/${candidateData._id}`, {
+                email: formData.email,
+                attendanceStatus: formData.attendanceStatus,
+                declaration: formData.declaration,
+                emailUpdated: isEditingEmail,
+                re_email: reEnterEmail? reEnterEmail : null
+            });
 
-        // Email Verification Logic
-        if (isEditingEmail) {
-            // Validation is already handled in validateForm
-
-            if (isDemoMode) {
-                setEmailVerified(true);
-                setIsEditingEmail(false);
-            } else {
-                try {
-                    await axios.post(`http://localhost:5000/api/candidate/verify-email/${candidateData._id}`, { email: formData.email });
-                    setEmailVerified(true);
-                    setIsEditingEmail(false);
-                } catch (error) {
-                    toast.error('Email verification failed');
-                    setSubmitting(false);
-                    return;
-                }
-            }
+            setSuccess('Your attendance has been confirmed successfully.');
+            setSubmitting(false);
         }
+        catch(err){
+            console.error(err);
+            // Handle error toast
+            alert('An error occurred while submitting your confirmation. Please try later.');
+            setError( 'An error occurred while submitting your confirmation. Please try later.');
 
-        if (isDemoMode) {
-            setTimeout(() => {
-                setSuccess('Your confirmation has been recorded successfully. Thank you!');
-                setTimeout(() => {
-                    setConfirmedData({
-                        name: candidateData.name,
-                        mobileNumber: candidateData.mobileNumber,
-                        sector: candidateData.sector,
-                        finalEmail: formData.email,
-                        attendanceStatus: formData.attendanceStatus,
-                        confirmedAt: new Date().toISOString()
-                    });
-                    setAlreadyConfirmed(true);
-                    setSubmitting(false);
-                }, 2000);
-            }, 1500);
-        } else {
-            try {
-                await axios.post(`http://localhost:5000/api/candidate/finalize/${candidateData._id}`, {
-                    attendanceStatus: formData.attendanceStatus
-                });
-                setSuccess('Your confirmation has been recorded successfully. Thank you!');
-                setTimeout(() => {
-                    navigate('/success');
-                }, 2000);
-            } catch (err) {
-                setError(err.response?.data?.message || 'Submission failed');
-                setSubmitting(false);
-            }
+            setSubmitting(false);
         }
     };
 
@@ -204,42 +171,25 @@ const VerificationLanding = () => {
             </div>
         );
     }
-
-    if (alreadyConfirmed) {
-        return (
+    else if (invalidToken) {
+        return(
             <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-                <div className="max-w-2xl w-full bg-white rounded-lg shadow-lg p-8">
-                    <div className="text-center mb-6">
-                        <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Response Already Recorded</h2>
-                        <p className="text-gray-600">Your response has been recorded and cannot be modified further.</p>
-                    </div>
-
-                    {confirmedData && (
-                        <div className="bg-gray-50 rounded-lg p-6 space-y-3">
-                            <h3 className="font-semibold text-gray-900 mb-4">Your Submitted Details:</h3>
-                            <div className="grid grid-cols-1 gap-3">
-                                <div><label className="text-sm text-gray-600">Name</label><p className="font-medium text-gray-900">{confirmedData.name}</p></div>
-                                <div><label className="text-sm text-gray-600">Mobile Number</label><p className="font-medium text-gray-900">{confirmedData.mobileNumber}</p></div>
-                                <div><label className="text-sm text-gray-600">Sector</label><p className="font-medium text-gray-900">{confirmedData.sector}</p></div>
-                                <div><label className="text-sm text-gray-600">Email</label><p className="font-medium text-gray-900">{confirmedData.finalEmail}</p></div>
-                                <div><label className="text-sm text-gray-600">Attendance Status</label><p className="font-medium text-gray-900">{confirmedData.attendanceStatus === 'attending' ? 'Will Attend' : 'Will Not Attend'}</p></div>
-                                <div><label className="text-sm text-gray-600">Submitted On</label><p className="font-medium text-gray-900">{new Date(confirmedData.confirmedAt).toLocaleString()}</p></div>
-                            </div>
-                        </div>
-                    )}
-
-
+                <div className="bg-white rounded-lg shadow-lg p-8 max-w-md text-center">
+                    <h1 className="text-2xl font-bold text-gray-900 mb-4">Invalid or Expired Link</h1>
+                    <p className="text-gray-600 mb-6">The verification link you used is either invalid or has expired. Please contact the examination helpdesk for assistance.</p>
+                    {/* <button
+                        onClick={() => navigate('/')}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                        Go to Home
+                    </button> */}
                 </div>
             </div>
-        );
+
+        )
     }
 
-    return (
+else return (
         <div className="min-h-screen bg-gray-50 py-8 px-4">
             <div className="max-w-2xl mx-auto">
                 <div className="bg-white rounded-lg shadow-lg p-8">
@@ -276,11 +226,10 @@ const VerificationLanding = () => {
                         </div>
 
                         {/* Email Verification Section */}
-                        <div className={`p-4 border rounded-lg ${emailVerified ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+                        <div className={`p-4 border rounded-lg ${isEditingEmail ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
                             <div className="flex justify-between items-center mb-4">
                                 <h3 className="font-medium text-gray-900">2. Email Verification</h3>
                                 <div className="flex items-center gap-2">
-                                    {emailVerified && <span className="text-green-600 font-bold text-sm">✓ Updated</span>}
                                     {isEditingEmail && (
                                         <button
                                             type="button"
@@ -349,7 +298,7 @@ const VerificationLanding = () => {
                                             )}
                                         </div>
 
-                                        {!emailVerified && !isEditingEmail && (
+                                        {!isEditingEmail && (
                                             <button
                                                 type="button"
                                                 onClick={handleEditEmail}
@@ -380,8 +329,8 @@ const VerificationLanding = () => {
                                     <input
                                         type="radio"
                                         name="attendanceStatus"
-                                        value="attending"
-                                        checked={formData.attendanceStatus === 'attending'}
+                                        value={true}
+                                        checked={formData.attendanceStatus === true}
                                         onChange={handleInputChange}
                                         className="mt-1 mr-3 text-blue-600 focus:ring-blue-500"
                                     />
@@ -391,8 +340,8 @@ const VerificationLanding = () => {
                                     <input
                                         type="radio"
                                         name="attendanceStatus"
-                                        value="not_attending"
-                                        checked={formData.attendanceStatus === 'not_attending'}
+                                        value={false}
+                                        checked={formData.attendanceStatus === false}
                                         onChange={handleInputChange}
                                         className="mt-1 mr-3 text-blue-600 focus:ring-blue-500"
                                     />
